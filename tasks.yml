@@ -1,0 +1,33 @@
+# Benchmark tasks
+
+- name: Hellaswag
+  dataset_url: https://raw.githubusercontent.com/klosax/hellaswag_text_data/main/hellaswag_val_full.txt
+  left: "\n400\t"
+  llama_args: --hellaswag
+
+- name: Winogrande
+  dataset_url: https://huggingface.co/datasets/ikawrakow/winogrande-eval-for-llama.cpp/resolve/main/winogrande-debiased-eval.csv
+  left:
+  - Final Winogrande score
+  - '): '
+  llama_args: --winogrande
+
+- name: MMLU
+  dataset_url: https://huggingface.co/datasets/ikawrakow/validation-datasets-for-llama.cpp/resolve/main/mmlu-validation.bin
+  left: 'Final result: '
+  llama_args: --multiple_choice -c 2048
+
+- name: TruthfulQA
+  dataset_url: https://huggingface.co/datasets/ikawrakow/validation-datasets-for-llama.cpp/resolve/main/truthful-qa-validation.bin
+  left: 'Final result: '
+  llama_args: --multiple_choice -np 16 -c 2048
+
+- name: ARC-Combined
+  dataset_url: https://huggingface.co/datasets/ikawrakow/validation-datasets-for-llama.cpp/resolve/main/arc-combined-validation.bin
+  left: 'Final result: '
+  llama_args: --multiple_choice -np 8 -c 2048
+
+- name: ARC-Challenge
+  dataset_url: https://huggingface.co/datasets/ikawrakow/validation-datasets-for-llama.cpp/resolve/main/arc-challenge-validation.bin
+  left: 'Final result: '
+  llama_args: --multiple_choice -np 8 -c 2048

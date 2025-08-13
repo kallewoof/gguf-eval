@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# gguf-eval
+datasets
+.profile_archives.pk
+tools/convert
+.vscode
+tools/*.json
+tools/*.bin

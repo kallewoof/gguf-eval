@@ -1,0 +1,24 @@
+[tool.ruff]
+target-version = "py38"
+line-length = 119
+
+[tool.ruff.lint]
+extend-select = [
+    "C", # Complexity
+    "E", # PEP8 errors
+    "F", # PEP8 formatting
+    "I", # Import sorting
+    "UP", # Pyupgrade upgrades
+    "W", # PEP8 warnings
+    # "PT009", # Pytest assertions
+]
+ignore = [
+    "C901", # Function too complex
+    "E501", # Line length (handled by ruff-format)
+    "UP007", # X | Y style Unions
+    # "PT009", # self.assertEqual etc
+    'E741',  # l not allowed
+]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
