@@ -18,7 +18,7 @@ An evaluation framework for GGUF models using llama.cpp.
 
 ## Render Plot
 
-After running evaluate.py on some tasks, you can plot these. The results look something like this:
+After running evaluate.py on some tasks, you can plot these. The results look something like this (for `--overlay` mode):
 
 ![Plot example](docs/images/plot-examples.png "Plot example")
 
@@ -27,6 +27,10 @@ After running evaluate.py on some tasks, you can plot these. The results look so
 
 ### Details
 
-* You can use `--overlay` to display all models in one graph, overlayed.
+* You can use `--overlay` to display all models in one graph, overlayed. The default is to show each one separately in a grid.
 * You can normalize the scores using `--normalization`. There are two modes, `cap` and `range`. `cap` means the models are all normalized so that the best performing model gets a 100% score, and the other models proportionately to that. E.g. if the model scores are 0.1, 0.2, and 0.3, this will be displayed as 33, 66, and 100% respectively. `range` means the models are normalized so that 0% is the worst performing model and 100% is the best performing model. The previous case would display as 0%, 50%, and 100%. The default is `none`.
 * The default behavior is to generate a html file and open in your browser. You can instead use e.g. `--renderer=png` to output to a png file, although the quality of this is not great at the moment.
+
+### Plot explanation
+
+In the overlay mode, each model is prefixed with a number. This is the *sum* of the scores for that model, for all tasks. Models are also sorted by the scores in both grid and overlay mode.
