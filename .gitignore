@@ -213,3 +213,4 @@ tools/convert
 .vscode
 tools/*.json
 tools/*.bin
+plot.html
