@@ -5,9 +5,11 @@ An evaluation framework for GGUF models using llama.cpp.
 ## Getting Started
 
 1. Install llama.cpp.
-2. Install requirements: `pip install -r requirements.txt`
-3. Get some models.
-4. Evaluate on all available tasks: `python evaluate.py model1.gguf model2.gguf ...`
+2. Clone this repository: `git clone https://github.com/kallewoof/gguf-eval.git`
+3. Change dir: `cd gguf-eval`
+4. Install requirements: `pip install -r requirements.txt`
+5. Get some models.
+6. Evaluate on all available tasks: `python evaluate.py model1.gguf model2.gguf ...`
 
 ### Details
 
