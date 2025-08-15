@@ -11,6 +11,7 @@ An evaluation framework for GGUF models using llama.cpp.
 
 ### Details
 
+* If you are e.g. on Windows and you're not running WSL, you may need to pass `--disable_ansi`.
 * Unless you installed llama.cpp so it is available from the shell, you need to pass a --llama_path to the llama.cpp directory: `python evaluate.py --llama_path ../llama.cpp model1.gguf model2.gguf ...`
 * If you need to pass arguments to llama.cpp for all models you can use `--llama_args "\--arg1=x"`.
 * If you need to pass arguments to llama.cpp for a specific model in your list only, you can use `--model_args`: example: `python evaluate.py llama-x.gguf nvidia-nemotron-49b.gguf GLM-4.5-Air.gguf --model_args emotron:"-ts 10/18" --model_args GLM-4.5-Air:"--n-cpu-moe 22 -ts 24/10"`
