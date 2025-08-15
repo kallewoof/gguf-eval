@@ -95,7 +95,7 @@ def main():
         def run(task: dict):
             dataset_invoc = prepare_task_ds(task)
             name = task['name']
-            command = f"{fa_flag} -m {model} -ngl 99 {dataset_invoc} {task['llama_args']} {model_args}"
+            command = f"{fa_flag} -m {model} -kvu -ngl 99 {dataset_invoc} {task['llama_args']} {model_args}"
             if not args.quiet:
                     print(END + f"\n{name}:")
             if not args.recalc and name in model_archives and isinstance(model_archives[name], list):
