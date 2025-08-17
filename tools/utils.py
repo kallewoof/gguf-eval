@@ -346,6 +346,7 @@ def prepare_task_ds(task: dict, quiet: bool=False):
         if not os.path.exists(f"datasets/{dataset}"):
             if not quiet:
                 print(f"Downloading {dataset} from {url}...")
+            os.makedirs("datasets", exist_ok=True)
             subprocess.run(f"wget -q -O datasets/{dataset} {url}", shell=True, check=True)
     flag = "-bf" if dataset.endswith(".bin") else "-f"
     return f"{flag} datasets/{dataset}"
