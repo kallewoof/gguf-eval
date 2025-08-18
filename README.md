@@ -37,3 +37,7 @@ After running evaluate.py on some tasks, you can plot these. The results look so
 ### Plot explanation
 
 In the overlay mode, each model is prefixed with a number. This is the *sum* of the scores for that model, for all tasks. Models are also sorted by the scores in both grid and overlay mode.
+
+## Troubleshooting
+
+* `error: invalid argument: -kvu`: update your llama.cpp installation.
