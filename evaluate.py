@@ -44,7 +44,7 @@ def main():
     parser.add_argument("--tasks", default="all", help=f"Tasks to run. Can be a list of {task_list}, all, or a negative list such as except:{task_list}, which runs all tasks except those listed.")
 
     args = parser.parse_args()
-    fa_flag = "" if args.disable_flash_attention else "-fa"
+    fa_flag = "" if args.disable_flash_attention else "-fa on"
     model_arg_dict = parse_model_args(args.model_args)
 
     perplexity_cmd = find_executable(args.llama_path, "llama-perplexity")
@@ -85,11 +85,7 @@ def main():
                     t = int(etas[m][0])
                     is_estimate = not etas[m][1]
                 print(f"{col}{timestr(t, is_estimate)}{col} {sizestr(model_size[m]):>9} {m}")
-        if model in archives:
-            model_archives = archives[model]
-        else:
-            model_archives = {}
-            archives[model] = model_archives
+        model_archives = archives.setdefault(model, {})
 
         model_time = 0
         def run(task: dict):
