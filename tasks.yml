@@ -22,6 +22,11 @@
   left: 'Final result: '
   llama_args: --multiple_choice -np 16 -c 2048
 
+- name: ARC-Easy
+  dataset_url: https://huggingface.co/datasets/ikawrakow/validation-datasets-for-llama.cpp/resolve/main/arc-easy-validation.bin
+  left: 'Final result: '
+  llama_args: --multiple_choice -np 8 -c 2048
+
 - name: ARC-Combined
   dataset_url: https://huggingface.co/datasets/ikawrakow/validation-datasets-for-llama.cpp/resolve/main/arc-combined-validation.bin
   left: 'Final result: '
@@ -31,3 +36,13 @@
   dataset_url: https://huggingface.co/datasets/ikawrakow/validation-datasets-for-llama.cpp/resolve/main/arc-challenge-validation.bin
   left: 'Final result: '
   llama_args: --multiple_choice -np 8 -c 2048
+
+- name: PIQA
+  dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/piqa_validation.bin
+  left: 'Final result: '
+  llama_args: --multiple_choice -np 8 -c 2048
+
+- name: BoolQ
+  dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/boolq_validation.bin
+  left: 'Final result: '
+  llama_args: --multiple_choice -np 8 -c 2048 --multiple-choice-tasks 400
