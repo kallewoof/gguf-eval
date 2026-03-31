@@ -353,10 +353,10 @@ def prepare_task_ds(task: dict, quiet: bool=False):
 
 
 
-def timestr(t: int, is_eta: bool=False) -> str:
+def timestr(t: int, is_eta: bool=False, color=END) -> str:
     if t < 1:
         return "[--:--:--]"
-    (L, R) = (BROWN, END) if is_eta else ("", "")
+    (L, R) = (BROWN, color) if is_eta else ("", "")
 
     return f"[{L}{t//3600:02}:{(t%3600)//60:02}:{(t%60):02}{R}]"
 
@@ -382,6 +382,9 @@ class Archive:
         with open(self.path + "_", "wb") as f:
             pickle.dump(self.content, f)
         os.rename(self.path + "_", self.path)
+
+    def setdefault(self, key: str, default):
+        return self.content.setdefault(key, default)
 
     def __contains__(self, key: str) -> bool:
         return key in self.content

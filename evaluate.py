@@ -84,7 +84,7 @@ def main():
                 if t < 1:
                     t = int(etas[m][0])
                     is_estimate = not etas[m][1]
-                print(f"{col}{timestr(t, is_estimate)}{col} {sizestr(model_size[m]):>9} {m}")
+                print(f"{col}{timestr(t, is_estimate, col)}{col} {sizestr(model_size[m]):>9} {m}")
         model_archives = archives.setdefault(model, {})
 
         model_time = 0
