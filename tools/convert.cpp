@@ -69,6 +69,67 @@ struct MultiplChoice {
     std::string question;
     Answers singleCorrect;
     Answers multipleCorrect;
+
+    static MultiplChoice from_json(const nlohmann::json& item) {
+        MultiplChoice m;
+
+        /*
+         PIQA: question="goal", single_correct.answers="solN", single_correct.labels=[1 if label matches index else 0]
+         {
+             "goal":"How do I ready a guinea pig cage for its new occupants?",
+             "sol1":"Provide the guinea pig with a cage full of a few inches of bedding made of ripped paper strips, you will also need to supply it with a water bottle and a food dish.",
+             "sol2":"Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish.",
+             "label":0
+         }
+         */
+        if (item.contains("goal") && item.contains("sol1") && item.contains("label")) {
+            m.question = item.value("goal", "");
+            auto& answers = m.singleCorrect.answers;
+            auto& labels = m.singleCorrect.labels;
+            int label = 1 + item.value("label", -99);
+            for (int i = 1; item.contains("sol" + std::to_string(i)); ++i) {
+                answers.push_back(item.value("sol" + std::to_string(i), ""));
+                labels.push_back(label == i);
+            }
+            // const auto& example = m.singleCorrect.answers[0];
+            // printf("Question: %s. Answer example: %s\n", m.question.c_str(), example.c_str());
+            return m;
+        }
+
+        /*
+         BOOLQ:
+         {
+            "question":"does ethanol take more energy make that produces",
+            "answer":false,
+            "passage":"All biomass goes through at least some of[...]"
+         }
+         */
+        if (item.contains("question") && item.contains("answer") && item.contains("passage")) {
+            // We reformat this as:
+            // question = "Given the following passage, answer the provided question.\n\nPassage: {passage}\n\nQuestion: {question}\n\n"
+            // singleCorrect.answers = ["Answer: yes", "Answer: no"]
+            // singleCorrect.labels = [1 if true else 0, 1 if false else 0]
+            m.question = "Given the following passage, answer the provided question.\n\nPassage: " + item.value("passage", "") + "\n\nQuestion: " + item.value("question", "") + "\n\n";
+            m.singleCorrect.answers.push_back("Answer: yes");
+            m.singleCorrect.answers.push_back("Answer: no");
+            bool answer = item.value("answer", true);
+            m.singleCorrect.labels.push_back(int(answer));
+            m.singleCorrect.labels.push_back(int(!answer));
+            const auto& example = m.singleCorrect.answers[0];
+            printf("Question: %s. Answer example: %s\n", m.question.c_str(), example.c_str());
+            return m;
+        }
+
+        // Fallback to IK format
+        m.question = item.value("question", "");
+        m.singleCorrect.answers = item.value("single_correct", nlohmann::json::object()).value("answers", std::vector<std::string>());
+        m.singleCorrect.labels  = item.value("single_correct", nlohmann::json::object()).value("labels", std::vector<int>());
+        m.multipleCorrect.answers = item.value("multiple_correct", nlohmann::json::object()).value("answers", std::vector<std::string>());
+        m.multipleCorrect.labels  = item.value("multiple_correct", nlohmann::json::object()).value("labels", std::vector<int>());
+
+        return m;
+    }
+
     void serialize(std::ostream& out) const {
         serializeString(out, question);
         singleCorrect.serialize(out);
@@ -135,13 +196,32 @@ struct MultiplChoice {
         }
         std::vector<MultiplChoice> result;
         for (const auto& item : j) {
-            MultiplChoice mc;
-            mc.question = item.value("question", "");
-            mc.singleCorrect.answers = item.value("single_correct", nlohmann::json::object()).value("answers", std::vector<std::string>());
-            mc.singleCorrect.labels  = item.value("single_correct", nlohmann::json::object()).value("labels", std::vector<int>());
-            mc.multipleCorrect.answers = item.value("multiple_correct", nlohmann::json::object()).value("answers", std::vector<std::string>());
-            mc.multipleCorrect.labels  = item.value("multiple_correct", nlohmann::json::object()).value("labels", std::vector<int>());
-            result.push_back(mc);
+            result.push_back(from_json(item));
+        }
+        return result;
+    }
+    static std::vector<MultiplChoice> loadFromJSONLFile(const char* fileName) {
+        std::ifstream in(fileName);
+        if (!in) {
+            printf("%s: failed to open %s\n", __func__, fileName);
+            return {};
+        }
+        nlohmann::json j;
+        std::vector<nlohmann::json> entries;
+        while (!in.eof()) {
+            try {
+                in >> j;
+            } catch (const nlohmann::json::parse_error& e) {
+                if (!in.eof() || entries.size() == 0) {
+                    printf("%s: failed to parse JSON from %s: %s\n", __func__, fileName, e.what());
+                    return {};
+                }
+            }
+            entries.push_back(j);
+        }
+        std::vector<MultiplChoice> result;
+        for (const auto& item : entries) {
+            result.push_back(from_json(item));
         }
         return result;
     }
@@ -190,6 +270,8 @@ int main(int argc, char **argv) {
         data = MultiplChoice::loadFromFile(argv[1]);
     } else if (ends_with(argv[1], ".json")) {
         data = MultiplChoice::loadFromJSONFile(argv[1]);
+    } else if (ends_with(argv[1], ".jsonl")) {
+        data = MultiplChoice::loadFromJSONLFile(argv[1]);
     } else {
         printf("Unsupported file format. Please provide a .bin or .json file.\n");
         return 1;
