@@ -45,4 +45,9 @@
 - name: BoolQ
   dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/boolq_validation.bin
   left: 'Final result: '
-  llama_args: --multiple_choice -np 8 -c 2048 --multiple-choice-tasks 400
+  llama_args: --multiple_choice -np 8 -c 2048
+
+- name: OpenBookQA
+  dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/openbookqa_validation.bin
+  left: 'Final result: '
+  llama_args: --multiple_choice -np 8 -c 2048

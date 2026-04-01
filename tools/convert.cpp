@@ -65,12 +65,39 @@ struct Answers {
     }
 };
 
+struct FormatLock {
+    std::string lock;
+    bool key_check(std::string name, const nlohmann::json& item, const std::vector<std::string>& keys, bool exclusive = false) {
+        if (exclusive && item.size() != keys.size()) {
+            // printf("   %s: exclusive flag set and sizes differ: %zu vs %zu.\n", name.c_str(), item.size(), keys.size());
+            return false;
+        }
+        for (const auto& key : keys) {
+            if (!item.contains(key)) {
+                // printf("  %s: key %s missing.\n", name.c_str(), key.c_str());
+                return false;
+            }
+        }
+        if (lock != "") {
+            if (lock != name) {
+                printf("FormatLock assertion: %s != %s. Multiple formats are not allowed.\n", name.c_str(), lock.c_str());
+                assert(0);
+            }
+            return true;
+        }
+
+        lock = name;
+        printf("Format: %s.\n", name.c_str());
+        return true;
+    }
+};
+
 struct MultiplChoice {
     std::string question;
     Answers singleCorrect;
     Answers multipleCorrect;
 
-    static MultiplChoice from_json(const nlohmann::json& item) {
+    static MultiplChoice from_json(const nlohmann::json& item, FormatLock& lock) {
         MultiplChoice m;
 
         /*
@@ -82,7 +109,7 @@ struct MultiplChoice {
              "label":0
          }
          */
-        if (item.contains("goal") && item.contains("sol1") && item.contains("label")) {
+        if (lock.key_check("piqa", item, {"goal", "sol1", "sol2", "label"})) {
             m.question = item.value("goal", "");
             auto& answers = m.singleCorrect.answers;
             auto& labels = m.singleCorrect.labels;
@@ -104,12 +131,12 @@ struct MultiplChoice {
             "passage":"All biomass goes through at least some of[...]"
          }
          */
-        if (item.contains("question") && item.contains("answer") && item.contains("passage")) {
+        if (lock.key_check("boolq", item, {"question", "answer", "passage"}, true)) {
             // We reformat this as:
-            // question = "Given the following passage, answer the provided question.\n\nPassage: {passage}\n\nQuestion: {question}\n\n"
+            // question = "Question: {question}\n\nPassage: {passage}\n\n"
             // singleCorrect.answers = ["Answer: yes", "Answer: no"]
             // singleCorrect.labels = [1 if true else 0, 1 if false else 0]
-            m.question = "Given the following passage, answer the provided question.\n\nPassage: " + item.value("passage", "") + "\n\nQuestion: " + item.value("question", "") + "\n\n";
+            m.question = "Question: " + item.value("question", "") + "\n\nPassage: " + item.value("passage", "") + "\n\n";
             m.singleCorrect.answers.push_back("Answer: yes");
             m.singleCorrect.answers.push_back("Answer: no");
             bool answer = item.value("answer", true);
@@ -120,12 +147,48 @@ struct MultiplChoice {
             return m;
         }
 
+        /*
+         OPENBOOKQA:
+         {
+            'id': '7-980',
+            'question_stem': 'The sun is responsible for',
+            'choices': {
+                'text': [
+                    'puppies learning new tricks',
+                    'children growing up and getting old',
+                    'flowers wilting in a vase',
+                    'plants sprouting, blooming and wilting'
+                ],
+                'label': ['A', 'B', 'C', 'D']
+            },
+            'answerKey': 'D'
+         }
+         */
+        if (lock.key_check("openbookqa", item, {"id", "question_stem", "choices", "answerKey"}, true)) {
+            auto choices = item.at("choices").at("text").get<std::vector<std::string>>();
+            auto label = item.at("choices").at("label").get<std::vector<std::string>>();
+            auto answerKey = item.value("answerKey", "");
+            m.question = item.value("question_stem", "");
+            m.singleCorrect.answers = choices;
+
+            auto& labels = m.singleCorrect.labels;
+            for (const auto& l : label) {
+                labels.push_back(l == answerKey);
+            }
+
+            return m;
+        }
+
         // Fallback to IK format
+        lock.key_check("generic", item, {});
         m.question = item.value("question", "");
         m.singleCorrect.answers = item.value("single_correct", nlohmann::json::object()).value("answers", std::vector<std::string>());
         m.singleCorrect.labels  = item.value("single_correct", nlohmann::json::object()).value("labels", std::vector<int>());
         m.multipleCorrect.answers = item.value("multiple_correct", nlohmann::json::object()).value("answers", std::vector<std::string>());
         m.multipleCorrect.labels  = item.value("multiple_correct", nlohmann::json::object()).value("labels", std::vector<int>());
+        if (m.question == "") {
+            printf("Question field empty.\n");
+        }
 
         return m;
     }
@@ -194,9 +257,10 @@ struct MultiplChoice {
             printf("%s: JSON data is not an array in %s\n", __func__, fileName);
             return {};
         }
+        FormatLock lock;
         std::vector<MultiplChoice> result;
         for (const auto& item : j) {
-            result.push_back(from_json(item));
+            result.push_back(from_json(item, lock));
         }
         return result;
     }
@@ -219,9 +283,10 @@ struct MultiplChoice {
             }
             entries.push_back(j);
         }
+        FormatLock lock;
         std::vector<MultiplChoice> result;
         for (const auto& item : entries) {
-            result.push_back(from_json(item));
+            result.push_back(from_json(item, lock));
         }
         return result;
     }
