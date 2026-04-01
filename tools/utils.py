@@ -411,6 +411,9 @@ def parse_score(s: str|None) -> float:
         return float(s[:-1]) # / 100
     return float(s)
 
+def process_score(score: float, task: dict) -> float:
+    return max(0, 100-score) if task.get('low_is_good', False) else score
+
 
 def traverse(d: dict|str|int|float, path: str):
     """

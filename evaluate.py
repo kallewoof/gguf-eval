@@ -20,6 +20,7 @@ from tools.utils import (
     parse_score,
     parse_task_list,
     prepare_task_ds,
+    process_score,
     run_command_with_progress,
     sizestr,
     timestr,
@@ -130,11 +131,24 @@ def main():
             if "scores" not in task:
                 task["scores"] = []
             results[task['name']] = run(task)
-            task["scores"].append(parse_score(results[task['name']]))
+            task["scores"].append(process_score(parse_score(results[task['name']]), task))
 
         times[i] = model_time
 
         final_results.append(results)
+
+    # Normalize scores per task and calculate aggregates, then sort report output
+    for i, (model, results) in enumerate(zip(model_list, final_results)):
+        aggregated_score = 0
+        for task in tasks:
+            if 'min' not in task:
+                task['max'] = max(task['scores'])
+                task['winner'] = model_list[next(i for i, score in enumerate(task['scores']) if score == task['max'])]
+            score = task['scores'][i]
+            if score > 0:
+                normalized_score = score / task['max']
+                aggregated_score += normalized_score
+        results['score'] = aggregated_score / len(tasks)
 
     if args.disable_sorting:
         # Simply calculate each task winner and move on
@@ -142,18 +156,6 @@ def main():
             max_score = max(task['scores'])
             task['winner'] = model_list[next(i for i, score in enumerate(task['scores']) if score == max_score)]
     else:
-        # Normalize scores per task and calculate aggregates, then sort report output
-        for i, (model, results) in enumerate(zip(model_list, final_results)):
-            aggregated_score = 0
-            for task in tasks:
-                if 'min' not in task:
-                    task['max'] = max(task['scores'])
-                    task['winner'] = model_list[next(i for i, score in enumerate(task['scores']) if score == task['max'])]
-                score = task['scores'][i]
-                if score > 0:
-                    normalized_score = score / task['max']
-                    aggregated_score += normalized_score
-            results['score'] = aggregated_score / len(tasks)
         final_results = sorted(final_results, key=lambda r: r['score'], reverse=True)
 
     report = []

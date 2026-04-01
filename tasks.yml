@@ -47,6 +47,12 @@
   left: 'Final result: '
   llama_args: --multiple_choice -np 8 -c 2048
 
+- name: Lambada
+  dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/lambada_validation.txt
+  left: "Final estimate: PPL = "
+  low_is_good: true
+  llama_args: -np 8 -c 2048
+
 - name: OpenBookQA
   dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/openbookqa_validation.bin
   left: 'Final result: '
