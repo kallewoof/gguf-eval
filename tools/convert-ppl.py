@@ -1,6 +1,9 @@
-import json
 import argparse
+import json
+
 from nltk.tokenize.treebank import TreebankWordDetokenizer
+
+
 # from sacremoses import MosesDetokenizer
 
 parser = argparse.ArgumentParser()

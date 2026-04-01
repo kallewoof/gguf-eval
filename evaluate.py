@@ -42,7 +42,7 @@ def main():
     with open("tasks.yml") as f:
         tasks = yaml.load(f, Loader=yaml.FullLoader)
     task_list = ",".join(task['name'].lower() for task in tasks)
-    parser.add_argument("--tasks", default="all", help=f"Tasks to run. Can be a list of {task_list}, all, or a negative list such as except:{task_list}, which runs all tasks except those listed.")
+    parser.add_argument("--tasks", default="base", help=f"Tasks to run. Can be a list of {task_list}, base, extended, or a negative list such as except:{task_list}, which runs all tasks except those listed. base will run all tasks not marked as extended in tasks.yml. extended will run all tasks, including tasks marked extended, except tasks marked as extends by an extended task (e.g. MMLU-Redux-2.0 will not run by default if MMLU-Redux-2.0-Big runs).")
 
     args = parser.parse_args()
     fa_flag = "" if args.disable_flash_attention else "-fa on"

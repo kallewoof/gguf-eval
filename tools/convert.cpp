@@ -179,6 +179,32 @@ struct MultiplChoice {
             return m;
         }
 
+        /*
+         MMLU-REDUX 2.0
+         {
+            "question":"Statement 1 | If R is a ring and f(x) and g(x) are in R[x], then deg (f(x)+g(x)) = maximum (deg f(x), deg g(x)). Statement 2 | If F is a field then every ideal of F[x] is principal.",
+            "choices":["True, True","False, False","True, False","False, True"],
+            "answer":3 [0-based],
+            "error_type":"ok",
+            "source":"1: It can be lower, eg f(x) = x, g(x) = 2x are both of degree 1, but their sum in Z_3 has degree 0. \r\n2: True https:\/\/mathworld.wolfram.com\/PrincipalIdealDomain.html#:~:text=A%20principal%20ideal%20domain%20is,one%20variable%20with%20real%20coefficients.",
+            "correct_answer":null,
+            "potential_reason":null
+         }
+         */
+        if (lock.key_check("mmlu_redux_2.0", item, {"question", "choices", "answer", "error_type", "source", "correct_answer", "potential_reason"}, true)) {
+            assert(item.value("error_type", "") == "ok");
+            m.question = item.value("question", "");
+            m.singleCorrect.answers = item.value("choices", std::vector<std::string>());
+            int answer = item.value("answer", 0);
+
+            auto& labels = m.singleCorrect.labels;
+            for (int i = 0; i < m.singleCorrect.answers.size(); ++i) {
+                labels.push_back(i == answer);
+            }
+
+            return m;
+        }
+
         // Fallback to IK format
         lock.key_check("generic", item, {});
         m.question = item.value("question", "");

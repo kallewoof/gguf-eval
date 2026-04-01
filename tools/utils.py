@@ -78,8 +78,16 @@ def parse_task_list(tasks: str, obs: list[dict]) -> list[dict]:
     tasks = tasks.lower()
     if is_negative:
         tasks = tasks[7:]
-    if tasks == "all":
-        return [] if is_negative else obs
+    if tasks == "extended" or tasks == "base":
+        if tasks == "extended":
+            obsolete = set()
+            for ob in obs:
+                if extends := ob.get('extends'):
+                    obsolete.add(extends)
+            selected = [ob for ob in obs if ob not in obsolete]
+        else:
+            selected = [ob for ob in obs if not ob.get('extended')]
+        return [ob for ob in obs if ob not in selected] if is_negative else selected
     taskset = set(tasks.split(","))
     return [task for task in obs if is_negative != (task['name'].lower() in taskset)]
 
