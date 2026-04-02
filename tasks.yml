@@ -18,16 +18,18 @@
   llama_args: --multiple_choice -c 2048
 
 - name: MMLU-Redux-2.0
-  dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/mmlu_redux_2.0_test_small.bin
-  left: 'Final result: '
-  llama_args: --multiple_choice -c 2048
+  dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/mmlu_redux_2.0_test_small.jsonl
+  thinking: true
+  llama_args: -c 2048
+  template: "Question: {question}\nChoices:\n{enum choices}"
 
 - name: MMLU-Redux-2.0-Big
-  dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/mmlu_redux_2.0_test_big.bin
+  dataset_url: https://huggingface.co/datasets/kallewooof/evaluation/resolve/main/mmlu_redux_2.0_test_big.jsonl
+  thinking: true
   extended: true
   extends: MMLU-Redux-2.0
-  left: 'Final result: '
-  llama_args: --multiple_choice -c 2048
+  llama_args: -c 2048
+  template: "Question: {question}\nChoices:\n{enum choices}"
 
 - name: TruthfulQA
   dataset_url: https://huggingface.co/datasets/ikawrakow/validation-datasets-for-llama.cpp/resolve/main/truthful-qa-validation.bin

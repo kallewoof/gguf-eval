@@ -1,27 +1,21 @@
 #!/usr/bin/env python3
 import argparse
 import sys
-import time
 
 import yaml
 
+from tools.evaluation import Context, run_ppl_task, run_thinking_task
 from tools.utils import (
-    END,
     GRAY,
     MV_UP,
     WHITE,
     Archive,
-    apply_split,
     calc_eta,
     disable_ansi,
-    find_executable,
     get_model_size,
-    parse_model_args,
     parse_score,
     parse_task_list,
-    prepare_task_ds,
     process_score,
-    run_command_with_progress,
     sizestr,
     timestr,
 )
@@ -45,10 +39,7 @@ def main():
     parser.add_argument("--tasks", default="base", help=f"Tasks to run. Can be a list of {task_list}, base, extended, or a negative list such as except:{task_list}, which runs all tasks except those listed. base will run all tasks not marked as extended in tasks.yml. extended will run all tasks, including tasks marked extended, except tasks marked as extends by an extended task (e.g. MMLU-Redux-2.0 will not run by default if MMLU-Redux-2.0-Big runs).")
 
     args = parser.parse_args()
-    fa_flag = "" if args.disable_flash_attention else "-fa on"
-    model_arg_dict = parse_model_args(args.model_args)
-
-    perplexity_cmd = find_executable(args.llama_path, "llama-perplexity")
+    ctx = Context.from_args(args)
 
     if args.disable_ansi:
         disable_ansi()
@@ -71,11 +62,6 @@ def main():
     task_names = [task['name'] for task in tasks]
     task_fmt = "{task:<" + str(max(1 + len(tn) for tn in task_names)) + "}"
     for i, model in enumerate(model_list):
-        model_args = ''
-        for model_ss, ma in model_arg_dict.items():
-            if model_ss in model:
-                model_args = ma
-                break
         if not args.quiet:
             print()
             etas = calc_eta(model_list, model_size, task_names, archives.content)
@@ -90,38 +76,10 @@ def main():
 
         model_time = 0
         def run(task: dict):
-            dataset_invoc = prepare_task_ds(task)
-            name = task['name']
-            command = f"{fa_flag} -m {model} -kvu -ngl 99 {dataset_invoc} {task['llama_args']} {model_args}"
+            executor = run_thinking_task if task.get('thinking', False) else run_ppl_task
+            rv = executor(ctx, model, task, model_archives, archives.save)
             if not args.quiet:
-                    print(END + f"\n{name}:")
-            if not args.recalc and name in model_archives and isinstance(model_archives[name], list):
-                rv = model_archives[name]
-            else:
-                left = task.get('left')
-                start_time = time.time()
-                split = None
-                attempt = ''
-                result = None
-                try:
-                    attempt = f"{perplexity_cmd} {command} {args.llama_args}"
-                    result = run_command_with_progress(attempt, ansi=not args.disable_ansi)
-                except Exception:
-                    pass
-                if result:
-                    try:
-                        split = apply_split(result, left).split("\n", 1)[0]
-                    except ValueError:
-                        pass
-                if split is None:
-                    print(f"Warning: unable to generate a split from any of the perplexity commands for task {name} and model {model}. Attempt: {attempt}")
-                    sys.exit(1)
-                end_time = time.time()
-                rv = [split, int(end_time - start_time)]
-                model_archives[name] = rv
-                archives.save()
-            if not args.quiet:
-                print(MV_UP(1) + task_fmt.format(task=name + ':') + f" {rv[0]}")
+                print(MV_UP(1) + task_fmt.format(task=task['name'] + ':') + f" {rv[0]}")
             nonlocal model_time
             model_time += rv[1]
             return rv[0]

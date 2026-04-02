@@ -1,3 +1,4 @@
+import hashlib
 import os
 import pickle
 import subprocess
@@ -6,6 +7,33 @@ import warnings
 
 import numpy as np
 
+
+def str_hash(s):
+    # Generate a hash of the string
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+def formatter(template: str, data: dict[str,str]):
+    comps = template.replace("{{", "%%LBRLBR%%").replace("}}", "%%RBRRBR%%").split("{")
+    rv = comps.pop(0)
+    for comp in comps:
+        v, rem = comp.split("}")
+        v_type = ""
+        if " " in v:
+            v_type, v = v.split(" ")
+        fetched = data[v]
+        if isinstance(fetched, list):
+            if v_type == "enum":
+                if not rv.endswith("\n"):
+                    rv += "\n"
+                for i, lv in zip("ABCDEFGHIJKLMNOPQRSTUVWXYZ", fetched):
+                    rv += f"{i}. {lv}\n"
+            else:
+                rv += ", ".join(fetched)
+        else:
+            assert v_type == ""
+            rv += fetched
+        rv += rem
+    return rv.replace("%%LBRLBR%%", "{{").replace("%%RBRRBR%%", "}}")
 
 def ansii_mv_up(steps: int):
     return f"\033[{steps}A"
@@ -265,7 +293,7 @@ def estimate_fallback_time(target_size: int,
     return 1.0
 
 
-def run_command_with_progress(command, shell=True, ansi=True):
+def run_command_with_progress(command, shell=True, ansi=True, disp_lines=20):
     if not ansi:
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
         if result.returncode != 0:
@@ -290,10 +318,10 @@ def run_command_with_progress(command, shell=True, ansi=True):
     def update_display():
         nonlocal first_display
         if not first_display:
-            lines_to_move_up = min(len(displayed_lines), 5)
+            lines_to_move_up = min(len(displayed_lines), disp_lines)
             if lines_to_move_up > 0:
                 print(MV_UP(lines_to_move_up), end='')
-        for i, line in enumerate(displayed_lines[-5:]):
+        for i, line in enumerate(displayed_lines[-disp_lines:]):
             print(f"{CLR}{line[:100]}")
 
         first_display = False
@@ -310,8 +338,8 @@ def run_command_with_progress(command, shell=True, ansi=True):
         if char == '\n':
             output_lines.append(current_line)
             displayed_lines.append(current_line)
-            if len(displayed_lines) > 5:
-                displayed_lines = displayed_lines[-5:]  # Keep only last 5
+            if len(displayed_lines) > disp_lines:
+                displayed_lines = displayed_lines[-disp_lines:]  # Keep only last disp_lines
             update_display()
             current_line = ""
         else:
@@ -320,8 +348,8 @@ def run_command_with_progress(command, shell=True, ansi=True):
     if current_line:
         output_lines.append(current_line)
         displayed_lines.append(current_line)
-        if len(displayed_lines) > 5:
-            displayed_lines = displayed_lines[-5:]
+        if len(displayed_lines) > disp_lines:
+            displayed_lines = displayed_lines[-disp_lines:]
         update_display()
 
     return_code = process.wait()
@@ -329,7 +357,7 @@ def run_command_with_progress(command, shell=True, ansi=True):
 
     if return_code == 0:
         if not first_display and displayed_lines:
-            lines_shown = min(len(displayed_lines), 5)
+            lines_shown = min(len(displayed_lines), disp_lines)
             print(MV_UP(lines_shown), end='')
             for _ in range(lines_shown):
                 print(CLR)
@@ -342,7 +370,7 @@ def run_command_with_progress(command, shell=True, ansi=True):
         print(complete_output)
         raise subprocess.CalledProcessError(return_code, command, complete_output)
 
-def prepare_task_ds(task: dict, quiet: bool=False):
+def prepare_task_ds(task: dict, path_only=False, quiet: bool=False):
     if 'dataset_url' not in task:
         dataset = task['dataset']
         if not os.path.exists(f"datasets/{dataset}"):
@@ -356,9 +384,11 @@ def prepare_task_ds(task: dict, quiet: bool=False):
                 print(f"Downloading {dataset} from {url}...")
             os.makedirs("datasets", exist_ok=True)
             subprocess.run(f"wget -q -O datasets/{dataset} {url}", shell=True, check=True)
+    if path_only:
+        return f"datasets/{dataset}"
+
     flag = "-bf" if dataset.endswith(".bin") else "-f"
     return f"{flag} datasets/{dataset}"
-
 
 
 def timestr(t: int, is_eta: bool=False, color=END) -> str:
