@@ -283,8 +283,14 @@ def estimate_fallback_time(target_size: int,
     for model in model_list:
         if model in archives and model in model_sizes:
             for task_times in archives[model].values():
+                if not isinstance(task_times, list):
+                    continue
                 if len(task_times) > 1:
-                    total_time += task_times[1]
+                    try:
+                        total_time += task_times[1]
+                    except KeyError:
+                        breakpoint()
+                        raise
                     total_size += model_sizes[model]
 
     if total_size > 0:

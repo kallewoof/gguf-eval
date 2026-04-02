@@ -33,14 +33,15 @@ class Context:
                 return ma
         return ''
 
-    def server(self, model: str, args: list[str]|None=None) -> Server:
+    def server(self, model: str, args: str|list[str]|None=None) -> Server:
+        args = args.split() if isinstance(args, str) else [] if not args else args
         return Server(
             self.server_cmd,
             model,
             (
                 self.fa_flag.split() +
                 ["-kvu", "-ngl", "99"] +
-                (args or []) +
+                args +
                 self.get_model_args(model).split()
             )
         )
@@ -113,7 +114,6 @@ def run_thinking_task(ctx: Context, model: str, task: dict, model_archives: dict
         ds.append(entry)
         key = str_hash(f"{entry}")
         found += key in cache
-    # {"question":"How many homomorphisms are there of Z into Z_2?","choices":["1","2","infinitely many","0"],"answer":1,"error_type":"ok","source":"Trivial homomorphism (send everything to identity) and mod 2","correct_answer":null,"potential_reason":null}
 
     if not ctx.quiet:
         print(f"{len(ds)} entries in dataset ({found} found in cache, {len(ds)-found} generations left)")
@@ -128,16 +128,31 @@ def run_thinking_task(ctx: Context, model: str, task: dict, model_archives: dict
                 response = cache[key]
             else:
                 task_verbalized = formatter(task['template'], entry)
-                response = server.complete([
+                messages = [
                     {"role":"system","content":"You are an AI assistant. Think carefully before responding."},
-                    {"role":"user", "content": task_verbalized},
-                ])
+                    {"role":"user", "content": task_verbalized.rstrip() + "\n\nRespond exactly as follows, without including reasoning or motivation:\n\nAnswer: LABEL."},
+                ]
+                print(f"Calling with {json.dumps(messages, indent=4)}")
+                response = server.complete(messages, echo=True)
                 cache[key] = response
                 save_callback()
 
+            response = response['response']
+            # Canonicalize (Answer is **B**.)
+            response = response.replace("*", "")
+            for variant in {"The correct answer is", "The anwer is", "Correct Choice:\n"}:
+                if variant + ": " in response:
+                    response = "Answer" + response.split(variant, 1)[1]
+                    break
+                elif variant + " " in response:
+                    response = "Answer: " + response.split(variant + " ", 1)[1]
+                    break
+                elif variant in response:
+                    response = "Answer: " + response.split(variant, 1)[1]
+
             correct_label = "ABCDEFGHIJKLMNOP"[entry['answer']]
             if "Answer: " in response:
-                answer_label = response.split(*"Answer: ", 1)[-1][0]
+                answer_label = response.split("Answer: ", 1)[-1][0]
             else:
                 breakpoint()
                 raise ValueError("can't extract answer")
